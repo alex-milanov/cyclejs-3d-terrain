@@ -1,0 +1,8 @@
+{
+	"preset": "google",
+	"esnext": true,
+	"validateIndentation": "\t",
+	"disallowMultipleVarDecl": { "allExcept": ["undefined"] },
+	"requireCurlyBraces": false,
+	"maximumLineLength": 100
+}
