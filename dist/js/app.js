@@ -57492,6 +57492,10 @@ var _scene = require('./scene');
 
 var _scene2 = _interopRequireDefault(_scene);
 
+var _image = require('./util/image');
+
+var _image2 = _interopRequireDefault(_image);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function main(_ref) {
@@ -57499,20 +57503,31 @@ function main(_ref) {
 	var animation = _ref.animation;
 
 
+	// intent
+	var heightMap$ = DOM.select('#load-height-map').events('click').map(function () {
+		return console.log('loading height map');
+	}).map(function () {
+		return _image2.default.load('assets/heightmap.png');
+	}).concatAll().map(function (image) {
+		return _image2.default.getData(image);
+	}).map(function (data) {
+		return console.log(data);
+	}).startWith(null);
+
 	// init
 	var init$ = _rx2.default.Observable.just().map(function () {
 		return _scene2.default.init();
 	});
 
 	return {
-		DOM: animation.pluck('timestamp').withLatestFrom(init$, function (timestamp, threeData) {
+		DOM: animation.pluck('timestamp').withLatestFrom(init$, heightMap$, function (timestamp, threeData) {
 
 			// render
 			_scene2.default.render(threeData);
 
 			// ui
-			return (0, _dom.div)([
-				// div('.time', ['Timestamp: ',timestamp.toString()])
+			return (0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map')
+			// div('.time', ['Timestamp: ',timestamp.toString()])
 			]);
 		})
 	};
@@ -57525,7 +57540,7 @@ var drivers = {
 
 (0, _core.run)(main, drivers);
 
-},{"./scene":67,"@cycle/core":1,"@cycle/dom":2,"cycle-animation-driver":13,"rx":26,"three":31}],67:[function(require,module,exports){
+},{"./scene":67,"./util/image":68,"@cycle/core":1,"@cycle/dom":2,"cycle-animation-driver":13,"rx":26,"three":31}],67:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -57540,14 +57555,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function init() {
 
-	console.log('initing');
-
 	var instance = new _three2.default.Scene();
 	var camera = new _three2.default.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
 	var renderer = new _three2.default.WebGLRenderer({
 		canvas: document.getElementById('main')
 	});
+
 	renderer.setSize(640, 480);
 
 	var geometry = new _three2.default.BoxGeometry(1, 1, 1);
@@ -57558,7 +57572,7 @@ function init() {
 	camera.position.z = 5;
 
 	return { instance: instance, renderer: renderer, camera: camera, cube: cube };
-};
+}
 
 function render(_ref) {
 	var instance = _ref.instance;
@@ -57576,4 +57590,46 @@ function render(_ref) {
 
 exports.default = { init: init, render: render };
 
-},{"three":31}]},{},[66]);
+},{"three":31}],68:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _rx = require('rx');
+
+var _rx2 = _interopRequireDefault(_rx);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var load = function load(path) {
+	return _rx2.default.Observable.create(function (observer) {
+		var image = new Image();
+
+		image.src = path;
+
+		image.onload = function () {
+			console.log('loaded image' + path);
+			observer.onNext(image);
+			observer.onCompleted();
+		};
+
+		image.onError = function (err) {
+			return observer.onError(err);
+		};
+	});
+};
+
+var getData = function getData(image) {
+	var canvas = document.createElement('canvas');
+	canvas.width = image.width;
+	canvas.height = image.height;
+	var ctx = canvas.getContext('2d');
+	ctx.drawImage(image, 0, 0);
+	return ctx.getImageData(0, 0, image.width, image.height);
+};
+
+exports.default = { load: load, getData: getData };
+
+},{"rx":26}]},{},[66]);
