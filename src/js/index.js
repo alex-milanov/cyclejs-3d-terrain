@@ -8,6 +8,7 @@ import {makeAnimationDriver} from 'cycle-animation-driver';
 
 import scene from './scene';
 import imageUtil from './util/image';
+import threeUtil from './util/three';
 
 function main({DOM, animation}) {
 
@@ -16,24 +17,36 @@ function main({DOM, animation}) {
 		.map(() => console.log('loading height map'))
 		.map(() => imageUtil.load('assets/heightmap.png'))
 		.concatAll()
-		.map(image => imageUtil.getData(image))
-		.map(data => console.log(data))
+		.map(imageUtil.getData)
+		.map(imageUtil.simplifyData)
 		.startWith(null);
 
 	// init
 	const init$ = Rx.Observable.just().map(() => scene.init());
 
+	const state$ = init$.combineLatest(heightMap$).map(([state, heightMap]) => {
+		console.log(state, heightMap);
+		let newState = Object.assign({}, state);
+		if (heightMap !== null) {
+			newState = Object.assign({},
+				newState,
+				threeUtil.createPlane(state.scene, heightMap, Math.sqrt(heightMap.length))
+			);
+		}
+		return newState;
+	});
+
 	return {
 		DOM: animation.pluck('timestamp')
-			.withLatestFrom(init$, heightMap$, (timestamp, threeData) => {
+			.withLatestFrom(state$, (timestamp, state) => {
 
 				// render
-				scene.render(threeData);
+				scene.render(state);
 
 				// ui
 				return div([
-					button('#load-height-map','Load height map')
-					// div('.time', ['Timestamp: ',timestamp.toString()])
+					button('#load-height-map','Load height map'),
+					div('.time', ['Timestamp: ',timestamp.toString()])
 				]);
 
 			})

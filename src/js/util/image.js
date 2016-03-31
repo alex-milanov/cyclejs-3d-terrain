@@ -24,4 +24,8 @@ const getData = (image) => {
 	return ctx.getImageData(0, 0, image.width, image.height);
 };
 
-export default {load, getData};
+const everyFirstOutOfFour = (d, i) => (i + 3) / 4 === parseInt((i + 3) / 4);
+
+const simplifyData = (res) => res.data.filter(everyFirstOutOfFour);
+
+export default {load, getData, simplifyData};

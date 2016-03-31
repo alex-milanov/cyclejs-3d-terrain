@@ -57474,6 +57474,8 @@ function extend() {
 },{}],66:[function(require,module,exports){
 'use strict';
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 var _three = require('three');
 
 var _three2 = _interopRequireDefault(_three);
@@ -57496,6 +57498,10 @@ var _image = require('./util/image');
 
 var _image2 = _interopRequireDefault(_image);
 
+var _three3 = require('./util/three');
+
+var _three4 = _interopRequireDefault(_three3);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function main(_ref) {
@@ -57508,27 +57514,35 @@ function main(_ref) {
 		return console.log('loading height map');
 	}).map(function () {
 		return _image2.default.load('assets/heightmap.png');
-	}).concatAll().map(function (image) {
-		return _image2.default.getData(image);
-	}).map(function (data) {
-		return console.log(data);
-	}).startWith(null);
+	}).concatAll().map(_image2.default.getData).map(_image2.default.simplifyData).startWith(null);
 
 	// init
 	var init$ = _rx2.default.Observable.just().map(function () {
 		return _scene2.default.init();
 	});
 
+	var state$ = init$.combineLatest(heightMap$).map(function (_ref2) {
+		var _ref3 = _slicedToArray(_ref2, 2);
+
+		var state = _ref3[0];
+		var heightMap = _ref3[1];
+
+		console.log(state, heightMap);
+		var newState = Object.assign({}, state);
+		if (heightMap !== null) {
+			newState = Object.assign({}, newState, _three4.default.createPlane(state.scene, heightMap, Math.sqrt(heightMap.length)));
+		}
+		return newState;
+	});
+
 	return {
-		DOM: animation.pluck('timestamp').withLatestFrom(init$, heightMap$, function (timestamp, threeData) {
+		DOM: animation.pluck('timestamp').withLatestFrom(state$, function (timestamp, state) {
 
 			// render
-			_scene2.default.render(threeData);
+			_scene2.default.render(state);
 
 			// ui
-			return (0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map')
-			// div('.time', ['Timestamp: ',timestamp.toString()])
-			]);
+			return (0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map'), (0, _dom.div)('.time', ['Timestamp: ', timestamp.toString()])]);
 		})
 	};
 }
@@ -57540,7 +57554,7 @@ var drivers = {
 
 (0, _core.run)(main, drivers);
 
-},{"./scene":67,"./util/image":68,"@cycle/core":1,"@cycle/dom":2,"cycle-animation-driver":13,"rx":26,"three":31}],67:[function(require,module,exports){
+},{"./scene":67,"./util/image":68,"./util/three":69,"@cycle/core":1,"@cycle/dom":2,"cycle-animation-driver":13,"rx":26,"three":31}],67:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -57555,8 +57569,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function init() {
 
-	var instance = new _three2.default.Scene();
-	var camera = new _three2.default.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+	var scene = new _three2.default.Scene();
+	var camera = new _three2.default.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
+	camera.position.z = 30;
 
 	var renderer = new _three2.default.WebGLRenderer({
 		canvas: document.getElementById('main')
@@ -57567,24 +57582,23 @@ function init() {
 	var geometry = new _three2.default.BoxGeometry(1, 1, 1);
 	var material = new _three2.default.MeshBasicMaterial({ color: 0x00ff00 });
 	var cube = new _three2.default.Mesh(geometry, material);
-	instance.add(cube);
+	scene.add(cube);
 
-	camera.position.z = 5;
-
-	return { instance: instance, renderer: renderer, camera: camera, cube: cube };
+	return { scene: scene, renderer: renderer, camera: camera };
 }
 
 function render(_ref) {
-	var instance = _ref.instance;
+	var scene = _ref.scene;
 	var renderer = _ref.renderer;
 	var camera = _ref.camera;
-	var cube = _ref.cube;
+	var plane = _ref.plane;
 
-	if (cube) {
-		cube.rotation.x += 0.1;
-		cube.rotation.y += 0.1;
-
-		renderer.render(instance, camera);
+	if (plane) {
+		// plane.rotation.x += 0.005;
+		// plane.rotation.y += 0.005;
+	}
+	if (scene) {
+		renderer.render(scene, camera);
 	}
 }
 
@@ -57630,6 +57644,58 @@ var getData = function getData(image) {
 	return ctx.getImageData(0, 0, image.width, image.height);
 };
 
-exports.default = { load: load, getData: getData };
+var everyFirstOutOfFour = function everyFirstOutOfFour(d, i) {
+	return (i + 3) / 4 === parseInt((i + 3) / 4);
+};
 
-},{"rx":26}]},{},[66]);
+var simplifyData = function simplifyData(res) {
+	return res.data.filter(everyFirstOutOfFour);
+};
+
+exports.default = { load: load, getData: getData, simplifyData: simplifyData };
+
+},{"rx":26}],69:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _three = require('three');
+
+var _three2 = _interopRequireDefault(_three);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var createPlane = function createPlane(scene, heightMap) {
+	var size = arguments.length <= 2 || arguments[2] === undefined ? 256 : arguments[2];
+	var gap = arguments.length <= 3 || arguments[3] === undefined ? 20 : arguments[3];
+	var modifier = arguments.length <= 4 || arguments[4] === undefined ? 0.05 : arguments[4];
+
+
+	console.log('creating plane');
+
+	var geometry = new _three2.default.PlaneGeometry(gap, gap, size, size);
+
+	for (var i = 0, l = geometry.vertices.length; i < l; i++) {
+		geometry.vertices[i].z = heightMap[i] * modifier;
+	}
+
+	var material = new _three2.default.MeshPhongMaterial({
+		color: 0x156289,
+		emissive: 0x072534,
+		side: _three2.default.DoubleSide,
+		shading: _three2.default.FlatShading
+	});
+
+	var plane = new _three2.default.Mesh(geometry, material);
+	scene.add(plane);
+
+	console.log(plane);
+
+	return { scene: scene, plane: plane };
+};
+
+exports.default = { createPlane: createPlane };
+
+},{"three":31}]},{},[66]);
