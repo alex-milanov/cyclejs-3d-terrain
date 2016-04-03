@@ -3,7 +3,7 @@ import THREE from 'three';
 import Rx from 'rx';
 
 import {run} from '@cycle/core';
-import {makeDOMDriver, div, canvas, button} from '@cycle/dom';
+import {makeDOMDriver, div, canvas, button, input, label} from '@cycle/dom';
 import {makeAnimationDriver} from 'cycle-animation-driver';
 
 import scene from './scene';
@@ -46,6 +46,14 @@ function main({DOM, animation}) {
 				// ui
 				return div([
 					button('#load-height-map','Load height map'),
+					div([
+						label('x rotation'),
+						input('#x-rotation', {type: 'range'})
+					]),
+					div([
+						label('y rotation'),
+						input('#y-rotation', {type: 'range'})
+					]),
 					div('.time', ['Timestamp: ',timestamp.toString()])
 				]);
 

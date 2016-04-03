@@ -1,6 +1,6 @@
 import THREE from 'three';
 
-const createPlane = (scene, heightMap, size = 256, gap = 20, modifier = 0.05) => {
+const createPlane = (scene, heightMap, size = 256, gap = 30, modifier = 0.02) => {
 
 	console.log('creating plane');
 
@@ -19,6 +19,8 @@ const createPlane = (scene, heightMap, size = 256, gap = 20, modifier = 0.05) =>
 
 	const plane = new THREE.Mesh(geometry, material);
 	scene.add(plane);
+
+	plane.rotation.x -= 1;
 
 	console.log(plane);
 

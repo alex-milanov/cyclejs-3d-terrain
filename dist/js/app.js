@@ -57542,7 +57542,7 @@ function main(_ref) {
 			_scene2.default.render(state);
 
 			// ui
-			return (0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map'), (0, _dom.div)('.time', ['Timestamp: ', timestamp.toString()])]);
+			return (0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map'), (0, _dom.div)([(0, _dom.label)('x rotation'), (0, _dom.input)('#x-rotation', { type: 'range' })]), (0, _dom.div)([(0, _dom.label)('y rotation'), (0, _dom.input)('#y-rotation', { type: 'range' })]), (0, _dom.div)('.time', ['Timestamp: ', timestamp.toString()])]);
 		})
 	};
 }
@@ -57584,7 +57584,31 @@ function init() {
 	var cube = new _three2.default.Mesh(geometry, material);
 	scene.add(cube);
 
-	return { scene: scene, renderer: renderer, camera: camera };
+	//this.scene.add( new THREE.AmbientLight( 0x555555 ) );
+
+	var light = new _three2.default.DirectionalLight(0xdfebff, 1.8);
+	light.position.set(40, 50, 40);
+	light.position.multiplyScalar(1.3);
+
+	light.castShadow = true;
+	//light.shadowCameraVisible = true;
+
+	light.shadowMapWidth = 1024;
+	light.shadowMapHeight = 1024;
+
+	var d = 300;
+
+	light.shadowCameraLeft = -d;
+	light.shadowCameraRight = d;
+	light.shadowCameraTop = d;
+	light.shadowCameraBottom = -d;
+
+	light.shadowCameraFar = 1000;
+	light.shadowDarkness = 0.5;
+
+	scene.add(light);
+
+	return { scene: scene, light: light, renderer: renderer, camera: camera };
 }
 
 function render(_ref) {
@@ -57669,8 +57693,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var createPlane = function createPlane(scene, heightMap) {
 	var size = arguments.length <= 2 || arguments[2] === undefined ? 256 : arguments[2];
-	var gap = arguments.length <= 3 || arguments[3] === undefined ? 20 : arguments[3];
-	var modifier = arguments.length <= 4 || arguments[4] === undefined ? 0.05 : arguments[4];
+	var gap = arguments.length <= 3 || arguments[3] === undefined ? 30 : arguments[3];
+	var modifier = arguments.length <= 4 || arguments[4] === undefined ? 0.02 : arguments[4];
 
 
 	console.log('creating plane');
@@ -57690,6 +57714,8 @@ var createPlane = function createPlane(scene, heightMap) {
 
 	var plane = new _three2.default.Mesh(geometry, material);
 	scene.add(plane);
+
+	plane.rotation.x -= 1;
 
 	console.log(plane);
 

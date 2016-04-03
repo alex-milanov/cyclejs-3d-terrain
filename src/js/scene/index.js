@@ -18,7 +18,31 @@ function init() {
 	const cube = new THREE.Mesh(geometry, material);
 	scene.add(cube);
 
-	return {scene, renderer, camera};
+	//this.scene.add( new THREE.AmbientLight( 0x555555 ) );
+
+	const light = new THREE.DirectionalLight(0xdfebff, 1.8);
+	light.position.set(40, 50, 40);
+	light.position.multiplyScalar(1.3);
+
+	light.castShadow = true;
+	//light.shadowCameraVisible = true;
+
+	light.shadowMapWidth = 1024;
+	light.shadowMapHeight = 1024;
+
+	var d = 300;
+
+	light.shadowCameraLeft = -d;
+	light.shadowCameraRight = d;
+	light.shadowCameraTop = d;
+	light.shadowCameraBottom = -d;
+
+	light.shadowCameraFar = 1000;
+	light.shadowDarkness = 0.5;
+
+	scene.add(light);
+
+	return {scene, light, renderer, camera};
 }
 
 function render({scene, renderer, camera, plane}) {
