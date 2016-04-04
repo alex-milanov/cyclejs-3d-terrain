@@ -1,6 +1,6 @@
 import THREE from 'three';
 
-const createPlane = (scene, heightMap, size = 256, gap = 30, modifier = 0.02) => {
+const createPlane = (scene, heightMap, size = 256, gap = 60, modifier = 0.02) => {
 
 	console.log('creating plane');
 

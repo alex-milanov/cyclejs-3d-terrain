@@ -4,11 +4,12 @@ import THREE from 'three';
 function init() {
 
 	const scene = new THREE.Scene();
-	const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
+	const canvas = document.getElementById('main');
+	const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 50);
 	camera.position.z = 30;
 
 	const renderer = new THREE.WebGLRenderer({
-		canvas: document.getElementById('main')
+		canvas
 	});
 
 	renderer.setSize(640, 480);
@@ -30,7 +31,7 @@ function init() {
 	light.shadowMapWidth = 1024;
 	light.shadowMapHeight = 1024;
 
-	var d = 300;
+	const d = 300;
 
 	light.shadowCameraLeft = -d;
 	light.shadowCameraRight = d;
@@ -45,8 +46,20 @@ function init() {
 	return {scene, light, renderer, camera};
 }
 
-function render({scene, renderer, camera, plane}) {
-	if (plane) {
+function render({scene, renderer, camera, plane, pressedKeys}) {
+	if (plane && pressedKeys) {
+
+		if (pressedKeys.indexOf('Left') > -1) {
+			plane.rotation.z += 0.01;
+		} else if (pressedKeys.indexOf('Right') > -1) {
+			plane.rotation.z -= 0.01;
+		}
+
+		if (pressedKeys.indexOf('Up') > -1) {
+			camera.position.z -= 0.1;
+		} else if (pressedKeys.indexOf('Down') > -1) {
+			camera.position.z += 0.1;
+		}
 		// plane.rotation.x += 0.005;
 		// plane.rotation.y += 0.005;
 	}

@@ -3,6 +3,7 @@
 	"esnext": true,
 	"validateIndentation": "\t",
 	"disallowMultipleVarDecl": { "allExcept": ["undefined"] },
+	"requireOperatorBeforeLineBreak": [ "=", "+", "-", "/", "*", "==", "===", "!=", "!==", ">", ">=", "<", "<="],
 	"requireCurlyBraces": false,
 	"maximumLineLength": 100
 }

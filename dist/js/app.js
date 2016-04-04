@@ -57474,8 +57474,6 @@ function extend() {
 },{}],66:[function(require,module,exports){
 'use strict';
 
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
 var _three = require('three');
 
 var _three2 = _interopRequireDefault(_three);
@@ -57514,26 +57512,49 @@ function main(_ref) {
 		return console.log('loading height map');
 	}).map(function () {
 		return _image2.default.load('assets/heightmap.png');
-	}).concatAll().map(_image2.default.getData).map(_image2.default.simplifyData).startWith(null);
+	}).concatAll().map(_image2.default.getData).map(_image2.default.simplifyData).map(function (data) {
+		return { action: 'createPlane', data: data };
+	});
+
+	var keyDowns$ = _rx2.default.Observable.fromEvent(document, 'keydown');
+	var keyUps$ = _rx2.default.Observable.fromEvent(document, 'keyup');
+	var keyActions$ = _rx2.default.Observable.merge(keyDowns$, keyUps$).distinctUntilChanged(function (e) {
+		return e.type + (e.key || e.which);
+	}).map(function (data) {
+		return { action: 'keyAction', data: data };
+	});
+
+	// keyActions.subscribe(function(e) {
+	// 	console.log(e.type, e.key || e.which, e.keyIdentifier);
+	// });
 
 	// init
 	var init$ = _rx2.default.Observable.just().map(function () {
 		return _scene2.default.init();
+	}).map(function (data) {
+		return { action: 'init', data: data };
 	});
 
-	var state$ = init$.combineLatest(heightMap$).map(function (_ref2) {
-		var _ref3 = _slicedToArray(_ref2, 2);
-
-		var state = _ref3[0];
-		var heightMap = _ref3[1];
-
-		console.log(state, heightMap);
-		var newState = Object.assign({}, state);
-		if (heightMap !== null) {
-			newState = Object.assign({}, newState, _three4.default.createPlane(state.scene, heightMap, Math.sqrt(heightMap.length)));
+	var state$ = _rx2.default.Observable.merge(init$, heightMap$, keyActions$).scan(function (state, event) {
+		console.log(state, event);
+		var newState = void 0;
+		switch (event.action) {
+			case 'init':
+				newState = Object.assign({}, event.data);
+				break;
+			case 'createPlane':
+				newState = Object.assign({}, state, _three4.default.createPlane(state.scene, event.data, Math.sqrt(event.data.length)));
+				break;
+			case 'keyAction':
+				var pressedKeys = [].concat(state.pressedKeys);
+				pressedKeys = ['Left', 'Right', 'Up', 'Down'].indexOf(event.data.keyIdentifier) > -1 ? event.data.type == 'keyup' ? pressedKeys.filter(function (key) {
+					return key != event.data.keyIdentifier;
+				}) : pressedKeys.concat([event.data.keyIdentifier]) : pressedKeys;
+				newState = Object.assign({}, state, { pressedKeys: pressedKeys });
+				break;
 		}
 		return newState;
-	});
+	}, {});
 
 	return {
 		DOM: animation.pluck('timestamp').withLatestFrom(state$, function (timestamp, state) {
@@ -57542,7 +57563,7 @@ function main(_ref) {
 			_scene2.default.render(state);
 
 			// ui
-			return (0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map'), (0, _dom.div)([(0, _dom.label)('x rotation'), (0, _dom.input)('#x-rotation', { type: 'range' })]), (0, _dom.div)([(0, _dom.label)('y rotation'), (0, _dom.input)('#y-rotation', { type: 'range' })]), (0, _dom.div)('.time', ['Timestamp: ', timestamp.toString()])]);
+			return (0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map'), (0, _dom.div)('.time', ['Timestamp: ', timestamp.toString()])]);
 		})
 	};
 }
@@ -57570,11 +57591,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function init() {
 
 	var scene = new _three2.default.Scene();
-	var camera = new _three2.default.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
+	var canvas = document.getElementById('main');
+	var camera = new _three2.default.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 50);
 	camera.position.z = 30;
 
 	var renderer = new _three2.default.WebGLRenderer({
-		canvas: document.getElementById('main')
+		canvas: canvas
 	});
 
 	renderer.setSize(640, 480);
@@ -57616,8 +57638,21 @@ function render(_ref) {
 	var renderer = _ref.renderer;
 	var camera = _ref.camera;
 	var plane = _ref.plane;
+	var pressedKeys = _ref.pressedKeys;
 
-	if (plane) {
+	if (plane && pressedKeys) {
+
+		if (pressedKeys.indexOf('Left') > -1) {
+			plane.rotation.z += 0.01;
+		} else if (pressedKeys.indexOf('Right') > -1) {
+			plane.rotation.z -= 0.01;
+		}
+
+		if (pressedKeys.indexOf('Up') > -1) {
+			camera.position.z -= 0.1;
+		} else if (pressedKeys.indexOf('Down') > -1) {
+			camera.position.z += 0.1;
+		}
 		// plane.rotation.x += 0.005;
 		// plane.rotation.y += 0.005;
 	}
@@ -57693,7 +57728,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var createPlane = function createPlane(scene, heightMap) {
 	var size = arguments.length <= 2 || arguments[2] === undefined ? 256 : arguments[2];
-	var gap = arguments.length <= 3 || arguments[3] === undefined ? 30 : arguments[3];
+	var gap = arguments.length <= 3 || arguments[3] === undefined ? 60 : arguments[3];
 	var modifier = arguments.length <= 4 || arguments[4] === undefined ? 0.02 : arguments[4];
 
 
