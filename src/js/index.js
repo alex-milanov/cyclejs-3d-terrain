@@ -33,7 +33,11 @@ function main({DOM, animation}) {
 	// });
 
 	// init
-	const init$ = Rx.Observable.just().map(() => scene.init()).map(data => ({action: 'init', data}));
+	const init$ = Rx.Observable.start(() => document.getElementById('main'))
+		.retryWhen(function(errors) {
+			return errors.delay(100);
+		})
+		.map((canvas) => scene.init(canvas)).map(data => ({action: 'init', data}));
 
 	const state$ = Rx.Observable.merge(
 		init$, heightMap$, keyActions$
@@ -61,19 +65,25 @@ function main({DOM, animation}) {
 				break;
 			}
 			return newState;
-		}, {});
+		}, {})
+		.startWith({});
 
 	return {
 		DOM: animation.pluck('timestamp')
 			.withLatestFrom(state$, (timestamp, state) => {
 
 				// render
-				scene.render(state);
+				if (state.scene) {
+					scene.render(state);
+				}
 
 				// ui
 				return div([
-					button('#load-height-map','Load height map'),
-					div('.time', ['Timestamp: ',timestamp.toString()])
+					div([
+						button('#load-height-map','Load height map'),
+						div('.time', ['Timestamp: ',timestamp.toString()])
+					]),
+					canvas('#main',{width: 640, height: 480})
 				]);
 
 			})

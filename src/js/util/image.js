@@ -20,8 +20,8 @@ const getData = (image) => {
 	canvas.width = image.width;
 	canvas.height = image.height;
 	const ctx = canvas.getContext('2d');
-	ctx.drawImage(image, 0, 0);
-	return ctx.getImageData(0, 0, image.width, image.height);
+	ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+	return ctx.getImageData(0, 0, canvas.width, canvas.height);
 };
 
 const everyFirstOutOfFour = (d, i) => (i + 3) / 4 === parseInt((i + 3) / 4);

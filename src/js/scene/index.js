@@ -1,10 +1,9 @@
 
 import THREE from 'three';
 
-function init() {
+function init(canvas) {
 
 	const scene = new THREE.Scene();
-	const canvas = document.getElementById('main');
 	const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 50);
 	camera.position.z = 30;
 
@@ -43,7 +42,7 @@ function init() {
 
 	scene.add(light);
 
-	return {scene, light, renderer, camera};
+	return {scene, light, renderer, camera, canvas};
 }
 
 function render({scene, renderer, camera, plane, pressedKeys}) {

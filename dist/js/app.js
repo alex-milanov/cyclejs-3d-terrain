@@ -57529,8 +57529,12 @@ function main(_ref) {
 	// });
 
 	// init
-	var init$ = _rx2.default.Observable.just().map(function () {
-		return _scene2.default.init();
+	var init$ = _rx2.default.Observable.start(function () {
+		return document.getElementById('main');
+	}).retryWhen(function (errors) {
+		return errors.delay(100);
+	}).map(function (canvas) {
+		return _scene2.default.init(canvas);
 	}).map(function (data) {
 		return { action: 'init', data: data };
 	});
@@ -57554,16 +57558,18 @@ function main(_ref) {
 				break;
 		}
 		return newState;
-	}, {});
+	}, {}).startWith({});
 
 	return {
 		DOM: animation.pluck('timestamp').withLatestFrom(state$, function (timestamp, state) {
 
 			// render
-			_scene2.default.render(state);
+			if (state.scene) {
+				_scene2.default.render(state);
+			}
 
 			// ui
-			return (0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map'), (0, _dom.div)('.time', ['Timestamp: ', timestamp.toString()])]);
+			return (0, _dom.div)([(0, _dom.div)([(0, _dom.button)('#load-height-map', 'Load height map'), (0, _dom.div)('.time', ['Timestamp: ', timestamp.toString()])]), (0, _dom.canvas)('#main', { width: 640, height: 480 })]);
 		})
 	};
 }
@@ -57588,10 +57594,9 @@ var _three2 = _interopRequireDefault(_three);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function init() {
+function init(canvas) {
 
 	var scene = new _three2.default.Scene();
-	var canvas = document.getElementById('main');
 	var camera = new _three2.default.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 50);
 	camera.position.z = 30;
 
@@ -57630,7 +57635,7 @@ function init() {
 
 	scene.add(light);
 
-	return { scene: scene, light: light, renderer: renderer, camera: camera };
+	return { scene: scene, light: light, renderer: renderer, camera: camera, canvas: canvas };
 }
 
 function render(_ref) {
@@ -57699,8 +57704,8 @@ var getData = function getData(image) {
 	canvas.width = image.width;
 	canvas.height = image.height;
 	var ctx = canvas.getContext('2d');
-	ctx.drawImage(image, 0, 0);
-	return ctx.getImageData(0, 0, image.width, image.height);
+	ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+	return ctx.getImageData(0, 0, canvas.width, canvas.height);
 };
 
 var everyFirstOutOfFour = function everyFirstOutOfFour(d, i) {
